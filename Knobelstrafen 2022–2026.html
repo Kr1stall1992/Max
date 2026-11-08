@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Knobelstrafen 2022–2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<style>
+:root{--bg:#fafaf7;--fg:#1d1d1b;--mut:#6b6b66;--card:#fff;--line:#e3e3dc;--acc:#c2410c;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161615;--fg:#ecece6;--mut:#9a9a92;--card:#201f1e;--line:#333330;--acc:#fb923c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#161615;--fg:#ecece6;--mut:#9a9a92;--card:#201f1e;--line:#333330;--acc:#fb923c;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:26px;margin:4px 0 2px}h2{font-size:18px;margin:34px 0 10px}
+p.s{color:var(--mut);margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.big{height:460px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.pc{height:210px}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+tr.t td,tr.t th{font-weight:700;border-top:2px solid var(--fg)}
+.note{color:var(--mut);font-size:13px;margin-top:22px}
+.lg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13px}
+</style></head><body><main>
+<h1>Knobelstrafen 2022–2026</h1>
+<p class="s">Strafen laut Chat-Listen plus Zuschlag für Abwesende (halber Ø bis 25.04.25, danach voller Ø). Stand 08.11.2026.</p>
+<h2>Einnahmen pro Jahr, aufgeteilt nach Person</h2>
+<p class="s">In jedem Jahr steht, wer am meisten gezahlt hat, unten; nach oben werden die Beträge kleiner.</p>
+<div class="card big"><canvas id="stack"></canvas></div>
+<div id="lg" class="lg"></div>
+<h2>Jede Person im Jahresvergleich</h2>
+<div class="grid" id="grid"></div>
+<h2>Tabelle</h2>
+<div class="card wrap"><table id="tb"></table></div>
+<p class="note">Vorläufige Werte: Abende mit unvollständigen Listen und alle Zuschläge sind Annahmen (Details in der Excel-Datei). Die Zuordnung zum Jahr richtet sich nach dem Datum des Knobelabends. Corinna war 2022 als Gast dabei.</p>
+</main>
+<script>
+const D={"years": [2022, 2023, 2024, 2025, 2026], "people": [{"name": "Moritz", "vals": [40.0, 107.0, 157.0, 238.0, 141.5]}, {"name": "Henning", "vals": [50.0, 90.0, 190.5, 126.0, 206.12]}, {"name": "Lennart", "vals": [60.0, 54.0, 166.5, 143.9, 175.0]}, {"name": "Christian", "vals": [0.0, 0.0, 40.0, 326.0, 215.62]}, {"name": "Marc", "vals": [28.0, 47.0, 95.0, 185.8, 170.0]}, {"name": "Max", "vals": [29.5, 82.0, 86.0, 114.5, 141.0]}, {"name": "Leon", "vals": [17.0, 84.0, 97.0, 131.0, 122.0]}, {"name": "Till", "vals": [20.5, 36.33, 88.5, 136.8, 149.1]}, {"name": "Lohmann", "vals": [23.0, 60.0, 46.5, 121.5, 177.0]}, {"name": "Flo", "vals": [20.5, 36.33, 103.5, 132.9, 121.6]}, {"name": "Winter", "vals": [19.0, 40.0, 56.0, 117.1, 108.12]}, {"name": "Steffen", "vals": [64.0, 67.0, 45.5, 64.8, 0.0]}, {"name": "Corinna (Gast)", "vals": [8.0, 0.0, 0.0, 0.0, 0.0]}]};
+const css=getComputedStyle(document.documentElement);
+const FG=css.getPropertyValue('--fg').trim(),MUT=css.getPropertyValue('--mut').trim(),LINE=css.getPropertyValue('--line').trim(),ACC=css.getPropertyValue('--acc').trim();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>location.reload());
+const COL=['#e6194b','#4363d8','#f58231','#2e9e44','#911eb4','#17bece','#f032e6','#8b5a2b','#ffd400','#7f7f7f','#ff9eb5','#6b0f1a','#b0c4de'];
+const DARK=[5,8,10,12];
+const eur=v=>v.toLocaleString('de-DE',{minimumFractionDigits:v%1?2:0,maximumFractionDigits:2})+' €';
+Chart.register(ChartDataLabels);
+Chart.defaults.font.family='system-ui,-apple-system,"Segoe UI",Arial,sans-serif';
+Chart.defaults.color=MUT;
+const yt=D.years.map((_,i)=>D.people.reduce((s,p)=>s+p.vals[i],0));
+const totals={id:'totals',afterDatasetsDraw(c){const{ctx,scales:{x,y}}=c;ctx.save();ctx.font='bold 13px system-ui,Arial';ctx.fillStyle=FG;ctx.textAlign='center';
+ yt.forEach((t,i)=>ctx.fillText('Σ '+eur(t),x.getPixelForValue(i),y.getPixelForValue(t)-8));ctx.restore()}};
+const BG=getComputedStyle(document.body).backgroundColor;
+const RK=D.years.map((_,y)=>D.people.map((p,i)=>({v:p.vals[y],i,n:p.name})).sort((a,b)=>b.v-a.v));
+const RKT=D.people.map((_,k)=>RK.map(r=>r[k]));
+document.getElementById('lg').innerHTML=D.people.map((p,i)=>'<span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:'+COL[i%COL.length]+';margin-right:5px;vertical-align:-1px"></i>'+p.name+'</span>').join('');
+new Chart(document.getElementById('stack'),{type:'bar',plugins:[totals],
+ data:{labels:D.years,datasets:RKT.map((r,k)=>({label:'Rang '+(k+1),data:r.map(x=>x.v),backgroundColor:r.map(x=>COL[x.i%COL.length]),borderColor:BG,borderWidth:1}))},
+ options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:24}},
+  scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:LINE},ticks:{callback:v=>v+' €'}}},
+  plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>RKT[c.datasetIndex][c.dataIndex].n+': '+eur(c.parsed.y)}},
+   datalabels:{color:c=>DARK.includes(RKT[c.datasetIndex][c.dataIndex].i)?'#111':'#fff',font:{size:10,weight:'bold'},display:c=>c.dataset.data[c.dataIndex]>=45,formatter:(v,c)=>{const n=RKT[c.datasetIndex][c.dataIndex].n;return v>=100?[n,Math.round(v)]:n+' '+Math.round(v)}}}}});
+const grid=document.getElementById('grid');
+D.people.forEach((p,i)=>{const sum=p.vals.reduce((a,b)=>a+b,0);
+ const d=document.createElement('div');d.className='card pc';d.innerHTML='<canvas></canvas>';grid.appendChild(d);
+ new Chart(d.firstChild,{type:'bar',data:{labels:D.years,datasets:[{data:p.vals,backgroundColor:COL[i%COL.length],borderRadius:4}]},
+  options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:16}},
+   scales:{x:{grid:{display:false}},y:{display:false,beginAtZero:true,grace:'12%'}},
+   plugins:{legend:{display:false},title:{display:true,text:p.name+' – gesamt '+eur(sum),color:FG,font:{size:14,weight:'bold'}},
+    tooltip:{callbacks:{label:c=>eur(c.parsed.y)}},
+    datalabels:{anchor:'end',align:'top',color:FG,font:{size:11},formatter:v=>v?eur(v):'–'}}}});});
+const tb=document.getElementById('tb');
+let h='<tr><th>Person</th>'+D.years.map(y=>'<th>'+y+'</th>').join('')+'<th>Gesamt</th></tr>';
+D.people.forEach(p=>{h+='<tr><td>'+p.name+'</td>'+p.vals.map(v=>'<td>'+(v?eur(v):'–')+'</td>').join('')+'<td><b>'+eur(p.vals.reduce((a,b)=>a+b,0))+'</b></td></tr>'});
+h+='<tr class="t"><td>Alle</td>'+yt.map(t=>'<td>'+eur(t)+'</td>').join('')+'<td>'+eur(yt.reduce((a,b)=>a+b,0))+'</td></tr>';
+tb.innerHTML=h;
+</script></body></html>
